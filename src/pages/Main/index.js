@@ -1,115 +1,67 @@
 import React, { Component } from 'react';
-
-import { FaPlus, FaSpinner } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { Table } from 'styled-table-component';
+
+import { MdAdd } from 'react-icons/md';
+
+import { TdPercentage } from './styles';
 
 import api from '../../services/api';
 
-import { List, Form, SubmitButton } from './styles';
 import Container from '../../components/Container';
+
+import { formatPrice } from '../../Util/format';
 
 export default class Main extends Component {
   state = {
-    newCoins: '',
     coins: [],
-    loading: false,
-    error: false,
   };
 
-  // carregar os dados do localStorage
-  componentDidMount() {
-    const repositories = localStorage.getItem('repositories');
+  async componentDidMount() {
+    const response = await api.get(`/cryptocurrency/listings/latest`);
 
-    if (repositories) {
-      this.setState({
-        repositories: JSON.parse(repositories),
-      });
-    }
-  }
-
-  // Salvar os dados do localStorage
-  componentDidUpdate(_, prevState) {
-    const { repositories } = this.state;
-
-    if (prevState.repositories !== repositories) {
-      localStorage.setItem('repositories', JSON.stringify(repositories));
-    }
-  }
-
-  handleInputChange = e => {
     this.setState({
-      newCoins: e.target.value,
+      coins: response.data.data,
     });
-  };
-
-  handleSubmit = async e => {
-    e.preventDefault();
-
-    this.setState({ loading: true });
-
-    try {
-      const { newCoins, coins } = this.state;
-
-      if (newCoins === '') {
-        throw new Error('Você precisa indicar um repositório');
-      }
-
-      const hasCoin = coins.find(coin => coin.name === newCoins);
-
-      if (hasCoin) throw new Error('Moeda duplicada');
-
-      const response = await api.get(`/repos/${newCoins}`);
-      const data = {
-        name: response.data.full_name,
-      };
-
-      this.setState({
-        coins: [...coins, data],
-        newCoins: '',
-        loading: false,
-        error: false,
-      });
-    } catch (error) {
-      this.setState({
-        loading: false,
-        error: true,
-      });
-    }
-  };
+  }
 
   render() {
-    const { newCoins, coins, loading, error } = this.state;
-
+    const { coins } = this.state;
     return (
       <Container>
-        <h1>Criptos</h1>
-
-        <Form onSubmit={this.handleSubmit} error={error}>
-          <input
-            type="text"
-            placeholder="Adicionar Criptomoeda"
-            value={newCoins}
-            onChange={this.handleInputChange}
-          />
-          <SubmitButton loading={loading}>
-            {loading ? (
-              <FaSpinner color="#fff" size={14} />
-            ) : (
-              <FaPlus color="#fff" size={14} />
-            )}
-          </SubmitButton>
-        </Form>
-
-        <List>
-          {coins.map(repository => (
-            <li key={repository.name}>
-              <span>{repository.name}</span>
-              <Link to={`/repository/${encodeURIComponent(repository.name)}`}>
-                Detalhes
-              </Link>
-            </li>
-          ))}
-        </List>
+        <Table>
+          <thead>
+            <tr>
+              <th scope="col">Icone</th>
+              <th scope="col">Nome</th>
+              <th scope="col">Symbol</th>
+              <th scope="col">Value</th>
+              <th scope="col">24H</th>
+            </tr>
+          </thead>
+          <tbody>
+            {coins.map(coin => (
+              <tr key={coin.id}>
+                <td>{coin.id}</td>
+                <td>
+                  <Link to={`/coin/${coin.id}`}>{coin.name}</Link>
+                </td>
+                <td>{coin.symbol}</td>
+                <td>{formatPrice(coin.quote.USD.price)}</td>
+                <TdPercentage
+                  positive={coin.quote.USD.percent_change_24h.toFixed(2) > 0}
+                >
+                  {coin.quote.USD.percent_change_24h.toFixed(2)}%
+                </TdPercentage>
+                <td>
+                  <button type="button">
+                    <MdAdd size={16} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
       </Container>
     );
   }

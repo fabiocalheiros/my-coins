@@ -9,7 +9,7 @@ export default function Routes() {
     <BrowserRouter>
       <Switch>
         <Route path="/" exact component={Main} />
-        <Route path="/coin/:coin" component={Coin} />
+        <Route path="/coin/:id" component={Coin} />
       </Switch>
     </BrowserRouter>
   );
